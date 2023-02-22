@@ -4,12 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
-enum
-{
-    PICTURE,
-    OBJECT
-};
+#include <mpi.h>
 
 struct Element
 {
@@ -27,6 +22,8 @@ struct Manager
     struct Element *patterns;
 };
 
+enum methodology getMethod();
+
 double getDiff(int p, int o);
 
 struct Element readElement(FILE *file);
@@ -38,9 +35,8 @@ void printElement(struct Element element);
 void printManagerInfo(struct Manager manager);
 
 double getMatchingInPlace(int row, int col, struct Element picture, struct Element pat);
-
+int getMatchingPartial(struct Manager m,int rank);
 int getMatching(struct Manager m);
-
 
 
 #endif

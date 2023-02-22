@@ -17,3 +17,6 @@ clean:
 
 run: 
 	./Manager
+
+run2:
+	./Manager

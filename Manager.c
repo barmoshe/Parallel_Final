@@ -8,9 +8,9 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
 {
     int startCol = col;
     int startRow = row;
-    if (col+pat.n>=picture.n)
+    if (col + pat.n >= picture.n)
         return 1.0;
-    if(row+pat.n>=picture.n)
+    if (row + pat.n >= picture.n)
         return 1.0;
     double matching = 0.0;
     for (int pRow = 0; pRow < pat.n; pRow++)
@@ -24,27 +24,28 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
             col++;
         }
     }
-    return matching/(pat.n*pat.n);
+    return matching / (pat.n * pat.n);
 }
 int getMatching(struct Manager m)
 {
     for (int pic = 0; pic < m.num_pictures; pic++)
     {
-        for (int pat = 0;pat< m.num_pictures; pat++)
+        for (int pat = 0; pat < m.num_patterns; pat++)
         {
             for (int i = 0; i < m.pictures[pic].n; i++)
             {
                 for (int j = 0; j < m.pictures[pic].n; j++)
                 {
-                    double matching =getMatchingInPlace(i, j, m.pictures[pic], m.patterns[pat]) ;
-                    if (matching<= m.matching_value)
-                        printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n",(pic + 1), (pat + 1), i, j,matching);
+                    double matching = getMatchingInPlace(i, j, m.pictures[pic], m.patterns[pat]);
+                    if (matching <= m.matching_value)
+                        printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", (pic + 1), (pat + 1), i, j, matching*1000);
                 }
             }
         }
     }
     return 0;
 }
+
 struct Element readElement(FILE *file)
 {
     struct Element element;
@@ -90,7 +91,6 @@ struct Manager readManager(FILE *file)
 
 void printElement(struct Element element)
 {
-    printf("ID: %d\n", element.id);
     printf("Size: %d\n", element.n);
     // printf("Matrix:\n");
     // for (int i = 0; i < element.n; i++)
@@ -105,35 +105,45 @@ void printElement(struct Element element)
 
 void printManagerInfo(struct Manager manager)
 {
-    printf("Matching Value: %lf\n", manager.matching_value);
-    printf("%d Pictures:\n", manager.num_pictures);
+    printf("[Matching Value: %lf]\n", manager.matching_value);
+    printf("*****%d Pictures:\n", manager.num_pictures);
     for (int i = 0; i < manager.num_pictures; i++)
     {
-        printf("Picture %d:\n", i + 1);
+        printf("-----[Picture %d]-----\n", manager.pictures[i].id);
         printElement(manager.pictures[i]);
     }
-    printf("%d Patterns:\n", manager.num_patterns);
+    printf("*****%d Patterns:\n", manager.num_patterns);
     for (int i = 0; i < manager.num_patterns; i++)
     {
-        printf("Pattern %d:\n", i + 1);
+        printf("-----[Pattern %d]-----\n", manager.patterns[i].id);
         printElement(manager.patterns[i]);
     }
 }
 
-int main()
-{
-    FILE *file = fopen("input.txt", "r");
-    struct Manager manager = readManager(file);
-    fclose(file);
 
-    printManagerInfo(manager);
-    
+int main(int argc, char *argv[])
+{
+    int rank, size;
+    MPI_Init(&argc, &argv);               // Initialize MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // Get the rank of the current process
+    MPI_Comm_size(MPI_COMM_WORLD, &size); // Get the total number of processes in the communicator
+    struct Manager *manager = (struct Manager *)malloc(sizeof(struct Manager));
+    if (rank == 0)
+    {
+        FILE *file = fopen("input.txt", "r");
+        *manager = readManager(file);
+        printManagerInfo(*manager);
+
+        fclose(file);
+    }
     clock_t start = clock();
-    getMatching(manager);
+   
+        if (rank == 0)
+            getMatching(*manager);
+
+  
     clock_t end = clock();
-    
-    double time_taken = ((double) (end - start)) / CLOCKS_PER_SEC;
+    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("getMatching function took %lf seconds to execute.\n", time_taken);
-    
     return 0;
 }
