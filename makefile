@@ -1,7 +1,7 @@
 CC = mpicc
 CFLAGS = -Wall -Wextra -g
-TARGET = Manager
-SRC = Manager.c
+TARGET = ManagerPar
+SRC = ManagerPar.c
 OBJ = $(SRC:.c=.o)
 
 all: $(TARGET)
@@ -19,4 +19,4 @@ run:
 	./Manager
 
 run2:
-	./Manager
+	mpiexec -n 2 ./ManagerPar

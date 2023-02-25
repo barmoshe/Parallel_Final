@@ -38,7 +38,7 @@ int getMatching(struct Manager m)
                 {
                     double matching = getMatchingInPlace(i, j, m.pictures[pic], m.patterns[pat]);
                     if (matching <= m.matching_value)
-                        printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", (pic + 1), (pat + 1), i, j, matching*1000);
+                        printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", (pic + 1), (pat + 1), i, j, matching * 1000);
                 }
             }
         }
@@ -120,7 +120,6 @@ void printManagerInfo(struct Manager manager)
     }
 }
 
-
 int main(int argc, char *argv[])
 {
     int rank, size;
@@ -137,11 +136,10 @@ int main(int argc, char *argv[])
         fclose(file);
     }
     clock_t start = clock();
-   
-        if (rank == 0)
-            getMatching(*manager);
 
-  
+    if (rank == 0)
+        getMatching(*manager);
+
     clock_t end = clock();
     double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("getMatching function took %lf seconds to execute.\n", time_taken);

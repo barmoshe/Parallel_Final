@@ -20,26 +20,50 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
         for (int pCol = 0; pCol < pat.n; pCol++)
         {
             matching += getDiff(picture.matrix[row][col], pat.matrix[pRow][pCol]);
-            // printf("pat number : %d\t%d,%d\n",pat.id,row,col);
+            // printf("pat number : %d\t%d,%d\n",pat.id,row,col); 
             col++;
         }
     }
     return matching / (pat.n * pat.n);
 }
+//funtion that gets  picture array(element) the size of it and rank number (0 or 1) if the rank is 1 return new array with odd indexs and if the rank is 0 return new array with even indexs
+struct Element *getPictureArray(struct Element *pictures,int size,int rank)
+{
+    struct Element *newArray = (struct Element *)malloc(size * sizeof(struct Element));
+    int j = 0;
+    for (int i = rank; i < size; i = i + 2)
+    {
+        newArray[j] = pictures[i];
+        j++;
+    }
+    return newArray;
+}
+//funtion to  get size of picture array
+int getSizeOfPictureArray(int size,int rank)
+{
+    int newSize = 0;
+    for (int i = rank; i < size; i = i + 2)
+    {
+        newSize++;
+    }
+    return newSize;
+}
+
 int getMatchingPartial(struct Manager m,int rank)
 {
-    
-    for (int pic = rank; pic <= m.num_pictures; pic=pic+2)
+    struct Element * picturesPart=getPictureArray(m.pictures,m.num_pictures,rank);  
+    int sizeOfPicturesPart=getSizeOfPictureArray(m.num_pictures,rank);
+    for (int pic = 0; pic <= sizeOfPicturesPart; pic++)
     {
         for (int pat = 0; pat < m.num_patterns; pat++)
         {
-            for (int i = 0; i < m.pictures[pic].n; i++)
+            for (int i = 0; i <picturesPart[pic].n; i++)
             {
-                for (int j = 0; j < m.pictures[pic].n; j++)
+                for (int j = 0; j < picturesPart[pic].n; j++)
                 {
-                    double matching = getMatchingInPlace(i, j, m.pictures[pic], m.patterns[pat]);
+                    double matching = getMatchingInPlace(i, j, picturesPart[pic], m.patterns[pat]);
                     if (matching <= m.matching_value)
-                        printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", (pic + 1), (pat + 1), i, j, matching);
+                        printf("%d) Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n",rank, picturesPart[pic].id, (pat + 1), i, j, matching);
                 }
             }
         }
@@ -222,11 +246,14 @@ int main(int argc, char** argv) {
         // free the buffer
        
         free(buf);
-        clock_t end = clock();
+       
+    }
+   MPI_Barrier(MPI_COMM_WORLD);
+    if(rank==0){
+         clock_t end = clock();
     double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("getMatching function took %lf seconds to execute.\n", time_taken);
     }
- 
     MPI_Finalize();
     return 0;
 }
