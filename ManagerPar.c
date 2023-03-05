@@ -51,30 +51,25 @@ int getSizeOfPictureArray(int size, int rank)
     }
     return newSize;
 }
-void getMatchingValue(struct Element pic, struct Element pat, double currentMatching, int rank)
-{
-    for (int i = 0; i < pic.n; i++)
-    {
-        for (int j = 0; j < pic.n; j++)
-        {
-            double matching = getMatchingInPlace(i, j, pic, pat);
-            if (matching <= currentMatching)
-            {
-                printf("%d) Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", rank, pic.id, pat.id, i, j, matching);
-                return;
-            }
-        }
-    }
-}
+
 int getMatchingPartial(struct Manager m, int rank)
 {
-
-    for (int pic = rank; pic <= m.num_pictures; pic = pic + 2)
+    struct Element *picturesPart = getPictureArray(m.pictures, m.num_pictures, rank);
+    int sizeOfPicturesPart = getSizeOfPictureArray(m.num_pictures, rank);
+    for (int pic = 0; pic <= sizeOfPicturesPart; pic++)
     {
-#pragma omp parallel for
+
         for (int pat = 0; pat < m.num_patterns; pat++)
         {
-            getMatchingValue(m.pictures[pic], m.patterns[pat], m.matching_value, rank);
+            for (int i = 0; i < picturesPart[pic].n; i++)
+            {
+                for (int j = 0; j < picturesPart[pic].n; j++)
+                {
+                    double matching = getMatchingInPlace(i, j, picturesPart[pic], m.patterns[pat]);
+                    if (matching <= m.matching_value)
+                        printf("%d) Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", rank, picturesPart[pic].id, (pat + 1), i, j, matching);
+                }
+            }
         }
     }
     return 0;

@@ -1,5 +1,5 @@
 CC = mpicc
-CFLAGS = -Wall -Wextra -g -fopenmp
+CFLAGS = -Wall -Wextra -g
 TARGET = ManagerPar
 SRC = ManagerPar.c
 OBJ = $(SRC:.c=.o)
