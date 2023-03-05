@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mpi.h>
+//#include <omp.h>
 
 struct Element
 {
@@ -35,8 +36,7 @@ void printElement(struct Element element);
 void printManagerInfo(struct Manager manager);
 
 double getMatchingInPlace(int row, int col, struct Element picture, struct Element pat);
-int getMatchingPartial(struct Manager m,int rank);
+int getMatchingPartial(struct Manager m, int rank);
 int getMatching(struct Manager m);
-
 
 #endif
