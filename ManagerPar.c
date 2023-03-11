@@ -2,10 +2,7 @@
 
 double getDiff(int p, int o)
 {
-    if (p == 0)
-        return 0; // no difference, since it's the same number
-    else
-        return abs((p - o) / p); // returns the difference between two numbers
+    return abs((p - o) / p);
 }
 double getMatchingInPlace(int row, int col, struct Element picture, struct Element pat)
 {
@@ -29,45 +26,20 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
     }
     return matching / (pat.n * pat.n);
 }
-// funtion that gets  picture array(element) the size of it and rank number (0 or 1) if the rank is 1 return new array with odd indexs and if the rank is 0 return new array with even indexs
-struct Element *getPictureArray(struct Element *pictures, int size, int rank)
+int getMatchingPartial(struct Manager m,int rank)
 {
-    struct Element *newArray = (struct Element *)malloc(size * sizeof(struct Element));
-    int j = 0;
-    for (int i = rank; i < size; i = i + 2)
+    
+    for (int pic = rank; pic <= m.num_pictures; pic=pic+2)
     {
-        newArray[j] = pictures[i];
-        j++;
-    }
-    return newArray;
-}
-// funtion to  get size of picture array
-int getSizeOfPictureArray(int size, int rank)
-{
-    int newSize = 0;
-    for (int i = rank; i < size; i = i + 2)
-    {
-        newSize++;
-    }
-    return newSize;
-}
-
-int getMatchingPartial(struct Manager m, int rank)
-{
-    struct Element *picturesPart = getPictureArray(m.pictures, m.num_pictures, rank);
-    int sizeOfPicturesPart = getSizeOfPictureArray(m.num_pictures, rank);
-    for (int pic = 0; pic <= sizeOfPicturesPart; pic++)
-    {
-
         for (int pat = 0; pat < m.num_patterns; pat++)
         {
-            for (int i = 0; i < picturesPart[pic].n; i++)
+            for (int i = 0; i < m.pictures[pic].n; i++)
             {
-                for (int j = 0; j < picturesPart[pic].n; j++)
+                for (int j = 0; j < m.pictures[pic].n; j++)
                 {
-                    double matching = getMatchingInPlace(i, j, picturesPart[pic], m.patterns[pat]);
+                    double matching = getMatchingInPlace(i, j, m.pictures[pic], m.patterns[pat]);
                     if (matching <= m.matching_value)
-                        printf("%d) Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", rank, picturesPart[pic].id, (pat + 1), i, j, matching);
+                        printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n", (pic + 1), (pat + 1), i, j, matching);
                 }
             }
         }
@@ -145,22 +117,20 @@ void printElement(struct Element element)
     //     printf("\n");
     // }
 }
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     int num_procs, rank;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    clock_t start = clock();
 
-    if (num_procs != 2)
-    {
+    if (num_procs != 2) {
         fprintf(stderr, "This example code is meant to run with 2 processes only\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
         exit(1);
     }
-    clock_t start = clock();
-    if (rank == 0)
-    { // master process
+   
+    if (rank == 0) { // master process
         // initialize the Manager struct
         struct Manager m;
         FILE *file = fopen("input.txt", "r");
@@ -173,12 +143,10 @@ int main(int argc, char **argv)
         MPI_Type_get_extent(MPI_INT, &num_patterns_size, &num_patterns_size);
 
         MPI_Aint pictures_size = 0, patterns_size = 0;
-        for (int i = 0; i < m.num_pictures; i++)
-        {
+        for (int i = 0; i < m.num_pictures; i++) {
             pictures_size += sizeof(int) + sizeof(int) + m.pictures[i].n * m.pictures[i].n * sizeof(int);
         }
-        for (int i = 0; i < m.num_patterns; i++)
-        {
+                for (int i = 0; i < m.num_patterns; i++) {
             patterns_size += sizeof(int) + sizeof(int) + m.patterns[i].n * m.patterns[i].n * sizeof(int);
         }
 
@@ -189,34 +157,30 @@ int main(int argc, char **argv)
         MPI_Pack(&m.matching_value, 1, MPI_DOUBLE, buf, total_size, &pos, MPI_COMM_WORLD);
         MPI_Pack(&m.num_pictures, 1, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
 
-        for (int i = 0; i < m.num_pictures; i++)
-        {
+        for (int i = 0; i < m.num_pictures; i++) {
             MPI_Pack(&m.pictures[i].id, 1, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
             MPI_Pack(&m.pictures[i].n, 1, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
-            for (int j = 0; j < m.pictures[i].n; j++)
-            {
+            for (int j = 0; j < m.pictures[i].n; j++) {
                 MPI_Pack(m.pictures[i].matrix[j], m.pictures[i].n, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
             }
         }
 
         MPI_Pack(&m.num_patterns, 1, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
 
-        for (int i = 0; i < m.num_patterns; i++)
-        {
+        for (int i = 0; i < m.num_patterns; i++) {
             MPI_Pack(&m.patterns[i].id, 1, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
             MPI_Pack(&m.patterns[i].n, 1, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
-            for (int j = 0; j < m.patterns[i].n; j++)
-            {
+            for (int j = 0; j < m.patterns[i].n; j++) {
                 MPI_Pack(m.patterns[i].matrix[j], m.patterns[i].n, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
             }
         }
 
         // send the packed data to the slave process
         MPI_Send(buf, total_size, MPI_PACKED, 1, 0, MPI_COMM_WORLD);
-        getMatchingPartial(m, rank);
+        getMatchingPartial(m,rank);
+
     }
-    else if (rank == 1)
-    { // slave process
+    else if (rank == 1) { // slave process
         // receive the packed data from the master process
         MPI_Status status;
         int count;
@@ -232,13 +196,11 @@ int main(int argc, char **argv)
         MPI_Unpack(buf, count, &pos, &m.num_pictures, 1, MPI_INT, MPI_COMM_WORLD);
 
         m.pictures = malloc(m.num_pictures * sizeof(struct Element));
-        for (int i = 0; i < m.num_pictures; i++)
-        {
+        for (int i = 0; i < m.num_pictures; i++) {
             MPI_Unpack(buf, count, &pos, &m.pictures[i].id, 1, MPI_INT, MPI_COMM_WORLD);
             MPI_Unpack(buf, count, &pos, &m.pictures[i].n, 1, MPI_INT, MPI_COMM_WORLD);
             m.pictures[i].matrix = malloc(m.pictures[i].n * sizeof(int *));
-            for (int j = 0; j < m.pictures[i].n; j++)
-            {
+            for (int j = 0; j < m.pictures[i].n; j++) {
                 m.pictures[i].matrix[j] = malloc(m.pictures[i].n * sizeof(int));
                 MPI_Unpack(buf, count, &pos, m.pictures[i].matrix[j], m.pictures[i].n, MPI_INT, MPI_COMM_WORLD);
             }
@@ -247,29 +209,24 @@ int main(int argc, char **argv)
         MPI_Unpack(buf, count, &pos, &m.num_patterns, 1, MPI_INT, MPI_COMM_WORLD);
 
         m.patterns = malloc(m.num_patterns * sizeof(struct Element));
-        for (int i = 0; i < m.num_patterns; i++)
-        {
+        for (int i = 0; i < m.num_patterns; i++) {
             MPI_Unpack(buf, count, &pos, &m.patterns[i].id, 1, MPI_INT, MPI_COMM_WORLD);
             MPI_Unpack(buf, count, &pos, &m.patterns[i].n, 1, MPI_INT, MPI_COMM_WORLD);
             m.patterns[i].matrix = malloc(m.patterns[i].n * sizeof(int *));
-            for (int j = 0; j < m.patterns[i].n; j++)
-            {
+            for (int j = 0; j < m.patterns[i].n; j++) {
                 m.patterns[i].matrix[j] = malloc(m.patterns[i].n * sizeof(int));
                 MPI_Unpack(buf, count, &pos, m.patterns[i].matrix[j], m.patterns[i].n, MPI_INT, MPI_COMM_WORLD);
             }
         }
-        getMatchingPartial(m, rank);
+        getMatchingPartial(m,rank);
         // free the buffer
-
+       
         free(buf);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0)
-    {
         clock_t end = clock();
-        double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
-        printf("getMatching function took %lf seconds to execute.\n", time_taken);
+    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+    printf("getMatching function took %lf seconds to execute.\n", time_taken);
     }
+ 
     MPI_Finalize();
     return 0;
 }

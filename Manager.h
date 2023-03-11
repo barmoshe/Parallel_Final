@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mpi.h>
-//#include <omp.h>
+#include <omp.h>
 
 struct Element
 {
@@ -16,14 +16,21 @@ struct Element
 
 struct Manager
 {
-    double matching_value;
+    double matchingValueFromFile;
     int num_pictures;
     struct Element *pictures;
     int num_patterns;
     struct Element *patterns;
 };
+struct Result
+{
+    int picID;
+    int patID;
+    int row;
+    int col;
+    double value;
+};
 
-enum methodology getMethod();
 
 double getDiff(int p, int o);
 

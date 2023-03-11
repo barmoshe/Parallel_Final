@@ -1,7 +1,7 @@
-CC = mpicc
-CFLAGS = -Wall -Wextra -g
-TARGET = ManagerPar
-SRC = ManagerPar.c
+CC = gcc
+CFLAGS = -Wall -Wextra -g  
+TARGET = main
+SRC = main.c
 OBJ = $(SRC:.c=.o)
 
 all: $(TARGET)
@@ -16,7 +16,7 @@ clean:
 	rm -f $(OBJ) $(TARGET)
 
 run: 
-	./Manager
+	./main
 
 run2:
 	mpiexec -n 2 ./ManagerPar
