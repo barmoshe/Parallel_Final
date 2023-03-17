@@ -1,5 +1,0 @@
-picture 1: no objects found||less then 3 objects found
-Picture 2: found Object 1 in [20][20] , Object 3 in [70][70] , Object 7 in [100][100]
-picture 3: no objects found||less then 3 objects found
-picture 4: no objects found||less then 3 objects found
-Picture 5: found Object 1 in [20][20] , Object 1 in [300][300] , Object 5 in [200][200]

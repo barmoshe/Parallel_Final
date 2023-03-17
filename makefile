@@ -1,7 +1,7 @@
-CC = gcc
+CC = mpicc
 CFLAGS = -Wall -Wextra -g  
 TARGET = main
-SRC = main.c
+SRC = newMain.c
 OBJ = $(SRC:.c=.o)
 
 all: $(TARGET)
@@ -19,4 +19,4 @@ run:
 	./main
 
 run2:
-	mpiexec -n 2 ./ManagerPar
+	mpiexec -n 3 ./main
