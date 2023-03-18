@@ -16,15 +16,6 @@ struct Element
     int **matrix;
 };
 typedef struct Element Element;
-// struct Result
-// {
-//     int picID;
-//     int patID;
-//     int row;
-//     int col;
-//     double value;
-// };
-// typedef struct Result Result;
 struct Manager
 {
     double matchingValueFromFile;
