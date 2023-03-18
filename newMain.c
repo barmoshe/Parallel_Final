@@ -1,9 +1,14 @@
 #include "utill.h"
 
+// This function calculates the difference between two numbers as a percentage.
+// The numbers are passed in as parameters, p and o.
+// The function returns the difference between the two numbers as a percentage.
 double getDiff(int p, int o)
 {
     return abs((p - o) / p);
 }
+
+// This function calculates the matching percentage between picture and pattern.
 double getMatchingInPlace(int row, int col, struct Element picture, struct Element pat)
 {
     int startCol = col;
@@ -20,38 +25,35 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
         for (int pCol = 0; pCol < pat.n; pCol++)
         {
             matching += getDiff(picture.matrix[row][col], pat.matrix[pRow][pCol]);
-            // printf("pat number : %d\t%d,%d\n",pat.id,row,col);
             col++;
         }
     }
     return matching / (pat.n * pat.n);
 }
-int *getMatchingResultSlaves(Manager *m, int picID)
+// This function calculates the matching percentage between specific picture and the patterns.
 {
     int *results = (int *)malloc(sizeof(int) * 3 * 4);
     int resultCount = 0;
+    #pragma omp parallel for shared(results, resultCount) schedule(dynamic)
     for (int pat = 0; pat < m->num_patterns; pat++)
     {
-        printf("pattern %d\n", pat + 1);
         for (int i = 0; i < m->pictures[picID - 1].n; i++)
         {
             for (int j = 0; j < m->pictures[picID - 1].n; j++)
             {
                 if (resultCount > 2)
-                {
-                    printf("in func Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", results[0], results[1], results[2], results[3], results[5], results[6], results[7], results[9], results[10], results[11]);
                     return results;
-                }
                 double matching = getMatchingInPlace(i, j, m->pictures[picID - 1], m->patterns[pat]);
                 if (matching <= m->matchingValueFromFile)
                 {
-                    // printMatrixWithin(i, j, m->pictures[pic], m->patterns[pat]->n);//test print
                     results[resultCount * 4] = m->pictures[picID - 1].id;
                     results[resultCount * 4 + 1] = m->patterns[pat].id;
                     results[resultCount * 4 + 2] = i;
                     results[resultCount * 4 + 3] = j;
-                    printf("in func Picture %d: found Object %d in [%d][%d]\n", results[resultCount * 4], results[resultCount * 4 + 1], results[resultCount * 4 + 2], results[resultCount * 4 + 3]);
                     resultCount++;
+                    pat++;
+                    i = 0;
+                    j = 0;
                 }
             }
         }
@@ -69,20 +71,8 @@ void printElement(struct Element element)
     printf("ID: %d\n", element.id);
     printf("Size: %d\n", element.n);
 }
-void printResultstoFile(int *results, FILE *file)
+void printResultstoFile(int *results, FILE *fp)
 {
-    if (results[1] != -1)
-    {
-        fprintf(file, "Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", results[0], results[1], results[2], results[3], results[5], results[6], results[7], results[9], results[10], results[11]);
-        printf("printed to file:\n");
-        printf("in func Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", results[0], results[1], results[2], results[3], results[5], results[6], results[7], results[9], results[10], results[11]);
-    }
-    else
-    {
-        fprintf(file, "Picture %d: no objects found\n", results[0]);
-        printf("printed to file:\n");
-        printf("in func Picture %d: no objects found\n", results[0]);
-    }
 }
 void printManagerInfo(struct Manager manager)
 {
@@ -147,6 +137,7 @@ Manager readManager(FILE *file)
 
 int main(int argc, char *argv[])
 {
+    clock_t start = clock();
     void *buf;
     int total_size = 0;
     int size, rank;
@@ -156,6 +147,7 @@ int main(int argc, char *argv[])
     MPI_Status status;
     Manager m = {0};
     int nextPicIdToCalculate = size;
+    int num_pictures = 0;
 
     if (rank == 0)
 
@@ -165,7 +157,7 @@ int main(int argc, char *argv[])
         Manager m;
         FILE *file = fopen("input.txt", "r");
         m = readManager(file);
-
+        num_pictures = m.num_pictures;
         // pack the Manager struct into a buffer
         MPI_Aint matching_value_size, num_pictures_size, num_patterns_size;
         MPI_Type_get_extent(MPI_DOUBLE, &matching_value_size, &matching_value_size);
@@ -210,7 +202,6 @@ int main(int argc, char *argv[])
                 MPI_Pack(m.patterns[i].matrix[j], m.patterns[i].n, MPI_INT, buf, total_size, &pos, MPI_COMM_WORLD);
             }
         }
-
         MPI_Bcast(&total_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     }
     else
@@ -258,29 +249,9 @@ int main(int argc, char *argv[])
 
         free(buf);
         printf("rank %d: unpacked Manager struct from buffer\n", rank);
-        int current = rank;
-        // get results for the RANK id picture
-        int *resultsArr = (int *)malloc(sizeof(int) * 4 * 3); // 4 ints per result, 3 results
-        resultsArr = getMatchingResultSlaves(&m, current);
-
-        // send resultsArr to master
-        MPI_Send(resultsArr, 4 * 3, MPI_INT, 0, 0, MPI_COMM_WORLD);
-        // while there is still work to do, get the next picture id from master
-        while (1)
-        {
-            MPI_Recv(&current, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-            if (current <= m.num_pictures)
-            {
-                resultsArr = getMatchingResultSlaves(&m, current);
-                MPI_Send(resultsArr, 4 * 3, MPI_INT, 0, 0, MPI_COMM_WORLD);
-            }
-            else
-                break;
-        }
     }
-    else
+    if (rank == 0)
     {
-        int *resultsArr = (int *)malloc(sizeof(int) * 4 * 3);
         FILE *fp;
         fp = fopen("Output.txt", "w");
         if (fp == NULL)
@@ -288,18 +259,35 @@ int main(int argc, char *argv[])
             printf("Error opening file!");
             exit(1);
         }
-        while (nextPicIdToCalculate <= m.num_pictures)
+
+        // recive num_pictures results arrays
+        for (int i = 0; i < num_pictures; i++)
         {
-            printf("test\n");
-            // receive the results from the slave process
-            MPI_Recv(resultsArr, 4 * 3, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-            printf("in main Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
-            printResultstoFile(resultsArr, fp);
-            // send the next picture to the slave process if there is still work to do
-            MPI_Send(&nextPicIdToCalculate, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD);
-            nextPicIdToCalculate++;
+            int *resultsArr = (int *)malloc(sizeof(int) * 4 * 3);
+            MPI_Recv(resultsArr, 12, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+            // printf("in main Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
+            if (resultsArr[1] != -1)
+                fprintf(fp, "Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d] \n", resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
+            else
+                fprintf(fp, "Picture %d: found less then 3 or  no objects\n", resultsArr[0]);
+        }
+        fclose(fp);
+        clock_t end = clock();
+        double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+        printf("time spent: %f\n", time_spent);
+    }
+    else
+    {
+        int *resultsArr = (int *)malloc(sizeof(int) * 4 * 3);
+        for (int i = rank - 1; i < m.num_pictures; i += size - 1)
+        {
+            resultsArr = getMatchingResultSlaves(&m, i + 1);
+            // printf("rank %d Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", rank, resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
+            //  send the results to the master process
+            MPI_Send(resultsArr, 12, MPI_INT, 0, resultsArr[0] - 1, MPI_COMM_WORLD);
         }
     }
+
 
     MPI_Finalize();
     return 0;
