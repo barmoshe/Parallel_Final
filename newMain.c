@@ -30,19 +30,20 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
     }
     return matching / (pat.n * pat.n);
 }
+int * getMatchingResultSlaves(Manager* m,int picID)
 // This function calculates the matching percentage between specific picture and the patterns.
 {
     int *results = (int *)malloc(sizeof(int) * 3 * 4);
     int resultCount = 0;
-    #pragma omp parallel for shared(results, resultCount) schedule(dynamic)
+   // #pragma omp parallel for shared(results, resultCount)
     for (int pat = 0; pat < m->num_patterns; pat++)
     {
         for (int i = 0; i < m->pictures[picID - 1].n; i++)
         {
             for (int j = 0; j < m->pictures[picID - 1].n; j++)
             {
-                if (resultCount > 2)
-                    return results;
+                if (resultCount <= 2)
+                {    
                 double matching = getMatchingInPlace(i, j, m->pictures[picID - 1], m->patterns[pat]);
                 if (matching <= m->matchingValueFromFile)
                 {
@@ -55,7 +56,7 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
                     i = 0;
                     j = 0;
                 }
-            }
+            }}
         }
     }
     results[0] = picID;
@@ -248,7 +249,7 @@ int main(int argc, char *argv[])
         }
 
         free(buf);
-        printf("rank %d: unpacked Manager struct from buffer\n", rank);
+        printf("\nrank %d: unpacked Manager struct from buffer\n", rank);
     }
     if (rank == 0)
     {
