@@ -22,7 +22,7 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
     {
         col = startCol;
         row = startRow + pRow;
-        #pragma omp parallel for reduction(+:matching)
+        //#pragma omp parallel for reduction(+:matching)
         for (int pCol = 0; pCol < pat.n; pCol++)
         {
             matching += getDiff(picture.matrix[row][col], pat.matrix[pRow][pCol]);
@@ -36,15 +36,16 @@ int *getMatchingResultSlaves(Manager *m, int picID)
 {
     int *results = (int *)malloc(sizeof(int) * 3 * 4);
     int resultCount = 0;
-#pragma omp parallel for shared(results, resultCount)
+#pragma omp parallel for shared(resultCount)
     for (int pat = 0; pat < m->num_patterns; pat++)
     {
         for (int i = 0; i < m->pictures[picID - 1].n; i++)
         {
+                           
             for (int j = 0; j < m->pictures[picID - 1].n; j++)
             {
                 if (resultCount <= 2)
-                {
+                { 
                     double matching = getMatchingInPlace(i, j, m->pictures[picID - 1], m->patterns[pat]);
                     if (matching <= m->matchingValueFromFile)
                     {
@@ -56,12 +57,15 @@ int *getMatchingResultSlaves(Manager *m, int picID)
                         pat++;
                         i = 0;
                         j = 0;
+                        
                     }
                 }
             }
         }
     }
     results[0] = picID;
+     if (resultCount <= 2)
+                
     for (int i = 1; i < 12; i++)
     {
         results[i] = -1;
@@ -147,8 +151,7 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Status status;
     Manager m = {0};
-    int nextPicIdToCalculate = size;
-    int num_pictures = 0;
+     int num_pictures = 0;
 
     if (rank == 0)
 
@@ -166,10 +169,12 @@ int main(int argc, char *argv[])
         MPI_Type_get_extent(MPI_INT, &num_patterns_size, &num_patterns_size);
 
         MPI_Aint pictures_size = 0, patterns_size = 0;
+        #pragma omp parallel for reduction(+:pictures_size)
         for (int i = 0; i < m.num_pictures; i++)
         {
             pictures_size += sizeof(int) + sizeof(int) + m.pictures[i].n * m.pictures[i].n * sizeof(int);
         }
+        #pragma omp parallel for reduction(+:patterns_size)
         for (int i = 0; i < m.num_patterns; i++)
         {
             patterns_size += sizeof(int) + sizeof(int) + m.patterns[i].n * m.patterns[i].n * sizeof(int);
@@ -266,7 +271,7 @@ int main(int argc, char *argv[])
         {
             int *resultsArr = (int *)malloc(sizeof(int) * 4 * 3);
             MPI_Recv(resultsArr, 12, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            // printf("in main Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
+             //printf("in main Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
             if (resultsArr[1] != -1)
                 fprintf(fp, "Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d] \n", resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
             else
@@ -283,7 +288,7 @@ int main(int argc, char *argv[])
         for (int i = rank - 1; i < m.num_pictures; i += size - 1)
         {
             resultsArr = getMatchingResultSlaves(&m, i + 1);
-            // printf("rank %d Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", rank, resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
+             //printf("rank %d Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d]\n", rank, resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
             //  send the results to the master process
             MPI_Send(resultsArr, 12, MPI_INT, 0, resultsArr[0] - 1, MPI_COMM_WORLD);
         }

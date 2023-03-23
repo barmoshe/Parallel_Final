@@ -21,6 +21,7 @@ struct Manager
     struct Element *pictures;
     int num_patterns;
     struct Element *patterns;
+    
 };
 struct Result
 {

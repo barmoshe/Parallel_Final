@@ -4,15 +4,7 @@ double getDiff(int p, int o)
 {
     return abs((p - o) / p);
 }
-// struct Result
-// {
-//     int picID;
-//     int patID;
-//     int col;
-//     int row;
-//     double value;
-// };
-//funtion to print struct Result
+
 void printResult(struct Result result)
 {
     printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf \t \t\n",result.picID, result.patID, result.col, result.row,result.value);        
@@ -56,16 +48,20 @@ int getMatching(struct Manager m)
 {
     for (int pic = 0; pic < m.num_pictures; pic++)
     {
+        int count=0;
         for (int pat = 0;pat< m.num_patterns; pat++)
         {
             for (int i = 0; i < m.pictures[pic].n; i++)
             {
                 for (int j = 0; j < m.pictures[pic].n; j++)
                 {
+                    if(count<=2){
                     double matching =getMatchingInPlace(i, j, m.pictures[pic], m.patterns[pat]) ;
-                    if (matching<= m.matchingValueFromFile)
-                       {}// printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n",(pic + 1), (pat + 1), i, j,matching);
+                    if (matching<= m.matchingValueFromFile){
+                       printf("Picture %d: found Object %d in [%d][%d]\twith matching: %lf\n",(pic + 1), (pat + 1), i, j,matching);
+              count++;
                 }
+                }}
             }
         }
     }
@@ -83,6 +79,7 @@ int getMatching(struct Manager m)
             {
                 for (int j = 0; j < m.pictures[pic].n; j++)
                 {
+                    if(count<=2){
                     double matching =getMatchingInPlace(i, j, m.pictures[pic], m.patterns[pat]) ;
                     if (matching<= m.matchingValueFromFile)
                     {
@@ -92,7 +89,7 @@ int getMatching(struct Manager m)
                         result[count].row = j;
                         result[count].value = matching;
                         count++;
-                    }
+                    }}
                 }
             }
         }
@@ -139,8 +136,6 @@ struct Manager readManager(FILE *file)
         manager.patterns[i] = readElement(file);
     }
 
-    manager.results= (Result*)malloc(sizeof(Result)*3*manager.num_pictures);
-    manager.results = {0};
     return manager;
 }
 
@@ -186,9 +181,7 @@ int main()
     struct Result * results = (struct Result *)malloc(sizeof(struct Result)*size);
     clock_t start = clock();
     getMatching(manager);
-    results = getMatchingResult(manager);
     clock_t end = clock();
-    printResultArray(results,size);
     double time_taken = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("getMatching function took %lf seconds to execute.\n", time_taken);
     
