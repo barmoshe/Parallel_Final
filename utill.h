@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mpi.h>
-#include <omp.h>
+//#include <omp.h>
 
 #define MASTER 0
 

@@ -1,5 +1,5 @@
 CC = mpicc
-CFLAGS = -Wall -Wextra -g  -fopenmp
+CFLAGS = -Wall -Wextra -g 
 TARGET = main
 SRC = newMain.c
 OBJ = $(SRC:.c=.o)

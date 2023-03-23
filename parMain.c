@@ -22,6 +22,7 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
     {
         col = startCol;
         row = startRow + pRow;
+        #pragma omp parallel for reduction(+:matching)
         for (int pCol = 0; pCol < pat.n; pCol++)
         {
             matching += getDiff(picture.matrix[row][col], pat.matrix[pRow][pCol]);
@@ -30,12 +31,12 @@ double getMatchingInPlace(int row, int col, struct Element picture, struct Eleme
     }
     return matching / (pat.n * pat.n);
 }
-int * getMatchingResultSlaves(Manager* m,int picID)
+int *getMatchingResultSlaves(Manager *m, int picID)
 // This function calculates the matching percentage between specific picture and the patterns.
 {
     int *results = (int *)malloc(sizeof(int) * 3 * 4);
     int resultCount = 0;
-   // #pragma omp parallel for shared(results, resultCount)
+#pragma omp parallel for shared(results, resultCount)
     for (int pat = 0; pat < m->num_patterns; pat++)
     {
         for (int i = 0; i < m->pictures[picID - 1].n; i++)
@@ -43,20 +44,21 @@ int * getMatchingResultSlaves(Manager* m,int picID)
             for (int j = 0; j < m->pictures[picID - 1].n; j++)
             {
                 if (resultCount <= 2)
-                {    
-                double matching = getMatchingInPlace(i, j, m->pictures[picID - 1], m->patterns[pat]);
-                if (matching <= m->matchingValueFromFile)
                 {
-                    results[resultCount * 4] = m->pictures[picID - 1].id;
-                    results[resultCount * 4 + 1] = m->patterns[pat].id;
-                    results[resultCount * 4 + 2] = i;
-                    results[resultCount * 4 + 3] = j;
-                    resultCount++;
-                    pat++;
-                    i = 0;
-                    j = 0;
+                    double matching = getMatchingInPlace(i, j, m->pictures[picID - 1], m->patterns[pat]);
+                    if (matching <= m->matchingValueFromFile)
+                    {
+                        results[resultCount * 4] = m->pictures[picID - 1].id;
+                        results[resultCount * 4 + 1] = m->patterns[pat].id;
+                        results[resultCount * 4 + 2] = i;
+                        results[resultCount * 4 + 3] = j;
+                        resultCount++;
+                        pat++;
+                        i = 0;
+                        j = 0;
+                    }
                 }
-            }}
+            }
         }
     }
     results[0] = picID;
@@ -72,9 +74,7 @@ void printElement(struct Element element)
     printf("ID: %d\n", element.id);
     printf("Size: %d\n", element.n);
 }
-void printResultstoFile(int *results, FILE *fp)
-{
-}
+
 void printManagerInfo(struct Manager manager)
 {
     printf("Matching Value: %lf\n", manager.matchingValueFromFile);
@@ -288,7 +288,6 @@ int main(int argc, char *argv[])
             MPI_Send(resultsArr, 12, MPI_INT, 0, resultsArr[0] - 1, MPI_COMM_WORLD);
         }
     }
-
 
     MPI_Finalize();
     return 0;

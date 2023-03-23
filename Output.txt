@@ -1,5 +1,0 @@
-Picture 1: found less then 3 or  no objects
-Picture 2: found less then 3 or  no objects
-Picture 4: found less then 3 or  no objects
-Picture 3: found less then 3 or  no objects
-Picture 5: found less then 3 or  no objects
