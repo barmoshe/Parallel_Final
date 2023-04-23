@@ -7,6 +7,29 @@ double getDiff(int p, int o)
 {
     return abs((p - o) / p);
 }
+//function to free Manager struct
+void freeManager(Manager *m)
+{
+    for (int i = 0; i < m->num_pictures; i++)
+    {
+        for (int j = 0; j < m->pictures[i].n; j++)
+        {
+            free(m->pictures[i].matrix[j]);
+        }
+        free(m->pictures[i].matrix);
+    }
+    free(m->pictures);
+    for (int i = 0; i < m->num_patterns; i++)
+    {
+        for (int j = 0; j < m->patterns[i].n; j++)
+        {
+            free(m->patterns[i].matrix[j]);
+        }
+        free(m->patterns[i].matrix);
+    }
+    free(m->patterns);
+}
+
 
 // This function calculates the matching percentage between picture and pattern.
 double getMatchingInPlace(int row, int col, struct Element picture, struct Element pat)
@@ -276,6 +299,7 @@ int main(int argc, char *argv[])
                 fprintf(fp, "Picture %d: found Object %d in [%d][%d] , Object %d in [%d][%d] , Object %d in [%d][%d] \n", resultsArr[0], resultsArr[1], resultsArr[2], resultsArr[3], resultsArr[5], resultsArr[6], resultsArr[7], resultsArr[9], resultsArr[10], resultsArr[11]);
             else
                 fprintf(fp, "Picture %d: found less then 3 or  no objects\n", resultsArr[0]);
+            free(resultsArr);
         }
         fclose(fp);
         clock_t end = clock();
@@ -292,8 +316,11 @@ int main(int argc, char *argv[])
             //  send the results to the master process
             MPI_Send(resultsArr, 12, MPI_INT, 0, resultsArr[0] - 1, MPI_COMM_WORLD);
         }
+        free(resultsArr);
     }
+    freeManager(&m);
 
     MPI_Finalize();
     return 0;
 }
+

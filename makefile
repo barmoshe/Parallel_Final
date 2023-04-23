@@ -19,4 +19,6 @@ run:
 	./main
 
 run2:
-	mpiexec -n 4 ./main
+	mpiexec -n 4   ./main
+run3:
+	mpiexec -n 6  -machinefile mf  ./main
